@@ -1,12 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PlayerRoomMovement : MonoBehaviour
 {
     [SerializeField] private float _speed = 5;
 
     private Vector3 _startPosition;
+
+    public event UnityAction MoveStarted;
+    public event UnityAction<DoorNew> DoorEntered;
+    public event UnityAction MoveEnded;
 
     private void OnEnable()
     {
@@ -23,31 +28,38 @@ public class PlayerRoomMovement : MonoBehaviour
         _startPosition = transform.position;
     }
 
-    private void OnDoorButtonClicked(DoorNew door)
+    private void OnDoorButtonClicked(DoorNew clickedDoor)
     {
-        Vector3 clickedDoorPosition = door.transform.position;
-        clickedDoorPosition.z = 0;
-
-        Vector3 oppositeDoorPosition = door.OppositeDoor.transform.position;
-        oppositeDoorPosition.z = 0;
-
-        StartCoroutine(MovingToNextRoom(clickedDoorPosition, oppositeDoorPosition, _startPosition));
+        StartCoroutine(MovingToNextRoom(clickedDoor));
     }
 
-    private IEnumerator MovingToNextRoom(Vector3 clickedDoorPosition, Vector3 oppositeDoorPosition, Vector3 finalPosition)
+    private IEnumerator MovingToNextRoom(DoorNew clickedDoor)
     {
+        Vector3 clickedDoorPosition = clickedDoor.transform.position;
+        clickedDoorPosition.z = 0;
+
+        Vector3 oppositeDoorPosition = clickedDoor.OppositeDoor.transform.position;
+        oppositeDoorPosition.z = 0;
+
+        MoveStarted?.Invoke();
+        DoorNew.DoorButtonClicked -= OnDoorButtonClicked;
+
         while (Vector3.Distance(transform.position, clickedDoorPosition) > 0.1f)
         {
             transform.position = Vector3.MoveTowards(transform.position, clickedDoorPosition, _speed * Time.deltaTime);
             yield return null;
         }
 
+        DoorEntered?.Invoke(clickedDoor);
         transform.position = oppositeDoorPosition;
 
-        while (Vector3.Distance(transform.position, finalPosition) > 0.1f)
+        while (Vector3.Distance(transform.position, _startPosition) > 0.1f)
         {
-            transform.position = Vector3.MoveTowards(transform.position, finalPosition, _speed * Time.deltaTime);
+            transform.position = Vector3.MoveTowards(transform.position, _startPosition, _speed * Time.deltaTime);
             yield return null;
         }
+
+        MoveEnded?.Invoke();
+        DoorNew.DoorButtonClicked += OnDoorButtonClicked;
     }
 }

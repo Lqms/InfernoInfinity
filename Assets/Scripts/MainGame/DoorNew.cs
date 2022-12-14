@@ -28,4 +28,14 @@ public class DoorNew : MonoBehaviour
     {
         DoorButtonClicked?.Invoke(this);
     }
+
+    public void Deactivate()
+    {
+        _doorButton.interactable = false;
+    }
+
+    public void Activate()
+    {
+        _doorButton.interactable = true;
+    }
 }
